@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Ledger — Task Manager</title>
+<style>
+  :root {
+    --ink: #1b1f23;
+    --paper: #f6f5f1;
+    --panel: #ffffff;
+    --line: #e4e1d8;
+    --accent: #3d5a80;
+    --accent-soft: #e8edf3;
+    --muted: #8a8578;
+    --success: #4c8c5c;
+    --danger: #b5484d;
+    --warn: #c98a2e;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  /* ===== Auth Card ===== */
+  #authCard {
+    width: 380px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 36px 32px;
+    box-shadow: 0 20px 50px rgba(27,31,35,0.08);
+  }
+
+  #authCard h1 {
+    font-size: 22px;
+    margin: 0 0 4px;
+    letter-spacing: -0.02em;
+  }
+
+  #authCard p.sub {
+    margin: 0 0 24px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .field-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 6px;
+    display: block;
+  }
+
+  .field {
+    margin-bottom: 16px;
+  }
+
+  input[type="text"], input[type="email"], input[type="password"], textarea, select {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 11px 13px;
+    font-size: 13.5px;
+    font-family: inherit;
+    background: var(--panel);
+  }
+
+  input:focus, textarea:focus, select:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  button.primary {
+    width: 100%;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  button.primary:hover { opacity: 0.92; }
+  button.primary:disabled { background: var(--line); cursor: not-allowed; }
+
+  button.link {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-size: 12.5px;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: underline;
+  }
+
+  #authStatus {
+    margin-top: 14px;
+    font-size: 12.5px;
+    text-align: center;
+    min-height: 16px;
+  }
+
+  #authStatus.error { color: var(--danger); }
+  #authStatus.ok { color: var(--success); }
+
+  .toggle-row {
+    text-align: center;
+    margin-top: 18px;
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+
+  .otp-hint {
+    background: var(--accent-soft);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 11.5px;
+    color: var(--accent);
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+
+  /* ===== Dashboard ===== */
+  #dashboard {
+    display: none;
+    width: 760px;
+    max-width: 100%;
+  }
+
+  #dashboard.active { display: block; }
+
+  #topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  #topbar h1 {
+    font-size: 20px;
+    margin: 0;
+    letter-spacing: -0.02em;
+  }
+
+  #topbar .who {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  #logoutBtn {
+    background: none;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 12.5px;
+    cursor: pointer;
+    color: var(--ink);
+  }
+
+  #logoutBtn:hover { background: var(--accent-soft); }
+
+  #composerCard {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin-bottom: 20px;
+  }
+
+  #composerCard .row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  #composerCard input[type="text"] { flex: 1; }
+
+  #composerCard textarea {
+    width: 100%;
+    resize: none;
+    height: 56px;
+    margin-bottom: 10px;
+  }
+
+  #composerCard .actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  button.small {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 16px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  #filterBar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .filter-chip {
+    border: 1px solid var(--line);
+    background: var(--panel);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--muted);
+  }
+
+  .filter-chip.active {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+  }
+
+  #taskList {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .task-card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .task-card.completed { opacity: 0.6; }
+
+  .task-checkbox {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid var(--line);
+    flex-shrink: 0;
+    margin-top: 2px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: white;
+  }
+
+  .task-checkbox.checked {
+    background: var(--success);
+    border-color: var(--success);
+  }
+
+  .task-body { flex: 1; min-width: 0; }
+
+  .task-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 3px;
+  }
+
+  .task-card.completed .task-title {
+    text-decoration: line-through;
+  }
+
+  .task-desc {
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  .task-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    color: var(--muted);
+  }
+
+  .icon-btn:hover { background: var(--accent-soft); color: var(--accent); }
+  .icon-btn.danger:hover { background: #fbeaea; color: var(--danger); }
+
+  #emptyState {
+    text-align: center;
+    padding: 50px 20px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--ink);
+    color: white;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+
+  #toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- ===== AUTH: Register / Login / OTP ===== -->
+<div id="authCard">
+  <div id="authHeader">
+    <h1>Ledger</h1>
+    <p class="sub" id="authSub">Sign in to manage your tasks.</p>
+  </div>
+
+  <!-- Login view -->
+  <div id="loginView">
+    <div class="field">
+      <label class="field-label">Email</label>
+      <input type="email" id="loginEmail" placeholder="you@example.com" />
+    </div>
+    <div class="field">
+      <label class="field-label">Password</label>
+      <input type="password" id="loginPassword" placeholder="••••••••" />
+    </div>
+    <button class="primary" onclick="handleLogin()">Continue</button>
+    <div class="toggle-row">
+      No account? <button class="link" onclick="showView('register')">Register</button>
+    </div>
+  </div>
+
+  <!-- Register view -->
+  <div id="registerView" style="display:none;">
+    <div class="field">
+      <label class="field-label">Name</label>
+      <input type="text" id="regName" placeholder="Jane Doe" />
+    </div>
+    <div class="field">
+      <label class="field-label">Email</label>
+      <input type="email" id="regEmail" placeholder="you@example.com" />
+    </div>
+    <div class="field">
+      <label class="field-label">Password</label>
+      <input type="password" id="regPassword" placeholder="At least 8 characters" />
+    </div>
+    <button class="primary" onclick="handleRegister()">Create account</button>
+    <div class="toggle-row">
+      Already have an account? <button class="link" onclick="showView('login')">Sign in</button>
+    </div>
+  </div>
+
+  <!-- OTP view -->
+  <div id="otpView" style="display:none;">
+    <div class="otp-hint">A 6-digit code was sent to your email. For local testing, check your chat-service/express-crud terminal — the OTP is logged there.</div>
+    <div class="field">
+      <label class="field-label">Verification code</label>
+      <input type="text" id="otpInput" placeholder="000000" maxlength="6" />
+    </div>
+    <button class="primary" onclick="handleVerifyOtp()">Verify & continue</button>
+    <div class="toggle-row">
+      <button class="link" onclick="showView('login')">Back to sign in</button>
+    </div>
+  </div>
+
+  <div id="authStatus"></div>
+</div>
+
+<!-- ===== DASHBOARD ===== -->
+<div id="dashboard">
+  <div id="topbar">
+    <div>
+      <h1>Your tasks</h1>
+      <div class="who" id="whoText"></div>
+    </div>
+    <button id="logoutBtn" onclick="logout()">Log out</button>
+  </div>
+
+  <div id="composerCard">
+    <div class="row">
+      <input type="text" id="newTitle" placeholder="Task title" />
+    </div>
+    <textarea id="newDesc" placeholder="Description (optional)"></textarea>
+    <div class="actions">
+      <button class="small" onclick="createTask()">Add task</button>
+    </div>
+  </div>
+
+  <div id="filterBar">
+    <div class="filter-chip active" data-filter="all" onclick="setFilter('all')">All</div>
+    <div class="filter-chip" data-filter="active" onclick="setFilter('active')">Active</div>
+    <div class="filter-chip" data-filter="completed" onclick="setFilter('completed')">Completed</div>
+  </div>
+
+  <div id="taskList"></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  const API_BASE = "http://localhost:5000/api";
+
+  let token = null;
+  let currentEmail = "";
+  let tasks = [];
+  let filter = "all";
+
+  // ---------- View switching ----------
+  function showView(view) {
+    document.getElementById("loginView").style.display = view === "login" ? "block" : "none";
+    document.getElementById("registerView").style.display = view === "register" ? "block" : "none";
+    document.getElementById("otpView").style.display = view === "otp" ? "block" : "none";
+    document.getElementById("authSub").textContent =
+      view === "otp" ? "Enter the code to finish signing in." : "Sign in to manage your tasks.";
+    setStatus("");
+  }
+
+  function setStatus(msg, type) {
+    const el = document.getElementById("authStatus");
+    el.textContent = msg;
+    el.className = type || "";
+  }
+
+  function toast(msg) {
+    const el = document.getElementById("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    setTimeout(() => el.classList.remove("show"), 2200);
+  }
+
+  // ---------- Auth flow ----------
+  async function handleRegister() {
+    const name = document.getElementById("regName").value.trim();
+    const email = document.getElementById("regEmail").value.trim();
+    const password = document.getElementById("regPassword").value;
+
+    if (!name || !email || !password) {
+      setStatus("Please fill in all fields.", "error");
+      return;
+    }
+
+    setStatus("Creating account...");
+    try {
+      const res = await fetch(`${API_BASE}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        const msg = data.errors ? data.errors.map(e => e.msg).join(", ") : data.message;
+        setStatus(msg || "Registration failed.", "error");
+        return;
+      }
+
+      setStatus("Account created. Please sign in.", "ok");
+      showView("login");
+      document.getElementById("loginEmail").value = email;
+    } catch (err) {
+      setStatus("Could not reach the server. Is it running on port 5000?", "error");
+    }
+  }
+
+  async function handleLogin() {
+    const email = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("loginPassword").value;
+
+    if (!email || !password) {
+      setStatus("Please enter email and password.", "error");
+      return;
+    }
+
+    setStatus("Checking credentials...");
+    try {
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setStatus(data.message || "Login failed.", "error");
+        return;
+      }
+
+      currentEmail = data.email || email;
+      setStatus("Code sent. Check your terminal for the OTP.", "ok");
+      showView("otp");
+    } catch (err) {
+      setStatus("Could not reach the server. Is it running on port 5000?", "error");
+    }
+  }
+
+  async function handleVerifyOtp() {
+    const otp = document.getElementById("otpInput").value.trim();
+    if (!otp) {
+      setStatus("Enter the code you received.", "error");
+      return;
+    }
+
+    setStatus("Verifying...");
+    try {
+      const res = await fetch(`${API_BASE}/auth/verify-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: currentEmail, otp }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setStatus(data.message || "Invalid code.", "error");
+        return;
+      }
+
+      token = data.token;
+      document.getElementById("whoText").textContent = data.user?.email || currentEmail;
+      enterDashboard();
+    } catch (err) {
+      setStatus("Could not reach the server.", "error");
+    }
+  }
+
+  function logout() {
+    token = null;
+    tasks = [];
+    document.getElementById("dashboard").classList.remove("active");
+    document.getElementById("authCard").style.display = "block";
+    document.getElementById("otpInput").value = "";
+    showView("login");
+  }
+
+  function enterDashboard() {
+    document.getElementById("authCard").style.display = "none";
+    document.getElementById("dashboard").classList.add("active");
+    loadTasks();
+  }
+
+  // ---------- Task CRUD ----------
+  function authHeaders() {
+    return {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    };
+  }
+
+  async function loadTasks() {
+    try {
+      const res = await fetch(`${API_BASE}/tasks`, { headers: authHeaders() });
+      if (res.status === 401) return logout();
+      tasks = await res.json();
+      renderTasks();
+    } catch (err) {
+      toast("Failed to load tasks — check the server is running.");
+    }
+  }
+
+  async function createTask() {
+    const title = document.getElementById("newTitle").value.trim();
+    const description = document.getElementById("newDesc").value.trim();
+
+    if (!title) {
+      toast("Give the task a title first.");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/tasks`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ title, description }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        toast(data.message || "Could not create task.");
+        return;
+      }
+      document.getElementById("newTitle").value = "";
+      document.getElementById("newDesc").value = "";
+      toast("Task added.");
+      loadTasks();
+    } catch (err) {
+      toast("Failed to reach the server.");
+    }
+  }
+
+  async function toggleComplete(taskId, current) {
+    try {
+      const res = await fetch(`${API_BASE}/tasks/${taskId}`, {
+        method: "PUT",
+        headers: authHeaders(),
+        body: JSON.stringify({ completed: !current }),
+      });
+      if (!res.ok) {
+        toast("Could not update task.");
+        return;
+      }
+      loadTasks();
+    } catch (err) {
+      toast("Failed to reach the server.");
+    }
+  }
+
+  async function editTask(taskId, oldTitle, oldDesc) {
+    const newTitle = prompt("Edit title:", oldTitle);
+    if (newTitle === null) return;
+    const newDesc = prompt("Edit description:", oldDesc || "");
+    if (newDesc === null) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/tasks/${taskId}`, {
+        method: "PUT",
+        headers: authHeaders(),
+        body: JSON.stringify({ title: newTitle, description: newDesc }),
+      });
+      if (!res.ok) {
+        toast("Could not update task.");
+        return;
+      }
+      toast("Task updated.");
+      loadTasks();
+    } catch (err) {
+      toast("Failed to reach the server.");
+    }
+  }
+
+  async function deleteTask(taskId) {
+    if (!confirm("Delete this task? This can't be undone.")) return;
+    try {
+      const res = await fetch(`${API_BASE}/tasks/${taskId}`, {
+        method: "DELETE",
+        headers: authHeaders(),
+      });
+      if (!res.ok) {
+        toast("Could not delete task.");
+        return;
+      }
+      toast("Task deleted.");
+      loadTasks();
+    } catch (err) {
+      toast("Failed to reach the server.");
+    }
+  }
+
+  function setFilter(f) {
+    filter = f;
+    document.querySelectorAll(".filter-chip").forEach((c) => {
+      c.classList.toggle("active", c.dataset.filter === f);
+    });
+    renderTasks();
+  }
+
+  function renderTasks() {
+    const list = document.getElementById("taskList");
+    let visible = tasks;
+    if (filter === "active") visible = tasks.filter((t) => !t.completed);
+    if (filter === "completed") visible = tasks.filter((t) => t.completed);
+
+    if (visible.length === 0) {
+      list.innerHTML = `<div id="emptyState">${
+        tasks.length === 0
+          ? "No tasks yet. Add your first one above."
+          : "Nothing here for this filter."
+      }</div>`;
+      return;
+    }
+
+    list.innerHTML = "";
+    visible.forEach((t) => {
+      const card = document.createElement("div");
+      card.className = "task-card" + (t.completed ? " completed" : "");
+      card.innerHTML = `
+        <div class="task-checkbox ${t.completed ? "checked" : ""}" onclick="toggleComplete('${t._id}', ${t.completed})">
+          ${t.completed ? "✓" : ""}
+        </div>
+        <div class="task-body">
+          <div class="task-title">${escapeHtml(t.title)}</div>
+          ${t.description ? `<div class="task-desc">${escapeHtml(t.description)}</div>` : ""}
+        </div>
+        <div class="task-actions">
+          <button class="icon-btn" onclick="editTask('${t._id}', ${JSON.stringify(t.title)}, ${JSON.stringify(t.description || "")})">Edit</button>
+          <button class="icon-btn danger" onclick="deleteTask('${t._id}')">Delete</button>
+        </div>
+      `;
+      list.appendChild(card);
+    });
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+</script>
+</body>
+</html>
